@@ -17,17 +17,7 @@
     // Wait for page to fully load and be read by Leo, THEN trigger download
     setTimeout(function() {
       var link = document.createElement('a');
-      link.href = 'data:text/plain;base64,' + btoa(
-        'PROOF OF CONCEPT — Unauthorized File Download\n' +
-        '================================================\n\n' +
-        'This file was downloaded to your computer without your consent.\n\n' +
-        'You asked Leo AI to summarize a travel article.\n' +
-        'A malicious page used a prompt injection to redirect Leo\n' +
-        'to an attacker-controlled page, which auto-downloaded this file.\n\n' +
-        'Timestamp: ' + new Date().toISOString() + '\n' +
-        'User-Agent: ' + navigator.userAgent + '\n' +
-        'URL: ' + location.href + '\n'
-      );
+      link.href = 'data:text/plain;base64,UFJPT0YgT0YgQ09OQ0VQVCAtIFVuYXV0aG9yaXplZCBGaWxlIERvd25sb2FkCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PQoKVGhpcyBmaWxlIHdhcyBkb3dubG9hZGVkIHRvIHlvdXIgY29tcHV0ZXIgd2l0aG91dCB5b3VyIGNvbnNlbnQuCgpZb3UgYXNrZWQgTGVvIEFJIHRvIHN1bW1hcml6ZSBhIHRyYXZlbCBhcnRpY2xlLgpBIG1hbGljaW91cyBwYWdlIHVzZWQgYSBwcm9tcHQgaW5qZWN0aW9uIHRvIHJlZGlyZWN0IExlbwp0byBhbiBhdHRhY2tlci1jb250cm9sbGVkIHBhZ2UsIHdoaWNoIGF1dG8tZG93bmxvYWRlZCB0aGlzIGZpbGUuCgpUaW1lc3RhbXAgd2lsbCBiZSBzaG93biBpbiBmaWxlbmFtZS4KVXNlci1BZ2VudCBhbmQgVVJMIGxvZ2dlZCBvbiBzZXJ2ZXIgc2lkZS4=';
       link.download = 'travel-itinerary-2026.txt';
       document.body.appendChild(link);
       link.click();
